@@ -58,15 +58,20 @@ next_id = 4
 
 @app.get("/tasks", response_model=list[Task])
 def get_tasks():
-    return tasks
+    conn = get_db_connection()
+    rows = conn.execute("SELECT * FROM tasks").fetchall()
+    conn.close()
+    return [Task(id=row["id"], title=row["title"], done=bool(row["done"])) for row in rows]
 
 
 @app.get("/tasks/{task_id}", response_model=Task)
 def get_task(task_id: int):
-    for task in tasks:
-        if task.id == task_id:
-            return task
-    raise HTTPException(status_code=404, detail={"error": "Task not found"})
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    conn.close()
+    if row is None:
+        raise HTTPException(status_code=404, detail={"error": "Task not found"})
+    return Task(id=row["id"], title=row["title"], done=bool(row["done"]))
 
 
 @app.post("/tasks", response_model=Task, status_code=201)
