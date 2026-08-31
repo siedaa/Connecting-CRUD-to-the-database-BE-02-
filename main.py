@@ -47,15 +47,6 @@ class TaskUpdate(BaseModel):
     done: bool
 
 
-tasks: list[Task] = [
-    Task(id=1, title="Buy groceries", done=False),
-    Task(id=2, title="Read a book", done=True),
-    Task(id=3, title="Write code", done=False),
-]
-
-next_id = 4
-
-
 @app.get("/tasks", response_model=list[Task])
 def get_tasks():
     conn = get_db_connection()
