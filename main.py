@@ -78,11 +78,12 @@ def get_task(task_id: int):
 def create_task(payload: TaskCreate):
     if not payload.title or not payload.title.strip():
         raise HTTPException(status_code=400, detail="Title is required")
-    global next_id
-    task = Task(id=next_id, title=payload.title.strip())
-    next_id += 1
-    tasks.append(task)
-    return task
+    conn = get_db_connection()
+    cursor = conn.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (payload.title.strip(), 0))
+    conn.commit()
+    task_id = cursor.lastrowid
+    conn.close()
+    return Task(id=task_id, title=payload.title.strip(), done=False)
 
 
 @app.put("/tasks/{task_id}", response_model=Task)
