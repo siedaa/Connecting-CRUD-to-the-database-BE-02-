@@ -90,18 +90,27 @@ def create_task(payload: TaskCreate):
 def update_task(task_id: int, payload: TaskUpdate):
     if not payload.title or not payload.title.strip():
         raise HTTPException(status_code=400, detail="Title is required")
-    for task in tasks:
-        if task.id == task_id:
-            task.title = payload.title
-            task.done = payload.done
-            return task
-    raise HTTPException(status_code=404, detail={"error": "Task not found"})
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail={"error": "Task not found"})
+    conn.execute(
+        "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+        (payload.title.strip(), int(payload.done), task_id),
+    )
+    conn.commit()
+    conn.close()
+    return Task(id=task_id, title=payload.title.strip(), done=payload.done)
 
 
 @app.delete("/tasks/{task_id}", status_code=204)
 def delete_task(task_id: int):
-    for i, task in enumerate(tasks):
-        if task.id == task_id:
-            tasks.pop(i)
-            return
-    raise HTTPException(status_code=404, detail={"error": "Task not found"})
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail={"error": "Task not found"})
+    conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
